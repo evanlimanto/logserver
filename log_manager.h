@@ -47,9 +47,9 @@ class LogEntry {
   }
 
  private:
-  int size_ = 0;
-  int offset_ = 0;
-  int64 timestamp_ = 0;
+  int size_;
+  int offset_;
+  int64 timestamp_;
   string data_;
   bool hasData_;
 

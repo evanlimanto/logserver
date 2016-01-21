@@ -139,12 +139,17 @@ LogEntry::LogEntry(int _size, int _offset, int64 _timestamp,
   data_(_data), hasData_(true) {}
 
 int main(int argc, char **argv) {
+  vector<pair<string, string>> args;
+  utils::argparse(&args, argc, argv);
+
   utils::kGen.seed(time(0));
   LogIndex index(true);
-  index.dumpEntriesToStdout();
-
-  for (int i = 1; i < argc; i++) {
-    index.addEntryToIndex(argv[i]);
+  for (const auto &argpair : args) {
+    if (argpair.first == "write") {
+      index.addEntryToIndex(argpair.second);
+    } else if (argpair.first == "dump") {
+      index.dumpEntriesToStdout();
+    }
   }
 
   return 0;

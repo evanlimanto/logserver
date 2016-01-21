@@ -5,17 +5,10 @@
 
 make clean || exit 1
 make logserver || exit 1
-result=$(./logserver a)
-result=$(./logserver b)
-if [ "$result" != "a" ]; then
-  echo $result
-  exit 1
-fi
-result=$(./logserver)
-if [ "$(./logserver c)" != "ab" ]; then
-  exit 1
-fi
-result=$(./logserver)
+result=$(./logserver -write=a)
+result=$(./logserver -write=b)
+result=$(./logserver -write=c)
+result=$(./logserver --dump)
 if [ "$result" != "abc" ]; then
   echo $result
   exit 1

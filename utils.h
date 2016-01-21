@@ -10,8 +10,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
+#include <cstring>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using boost::algorithm::ends_with;
@@ -25,9 +27,11 @@ using std::vector;
 using std::fstream;
 using std::ifstream;
 using std::ofstream;
+using std::pair;
 
 namespace utils {
 
+const char kDumpOption[] = "--dump";
 const char kLogExtension[] = ".log";
 const int kMagicIdentifier = 0x7a5b1c4f;
 const char kMagicIdentifierStr[] =
@@ -122,6 +126,69 @@ static void generateLogFile(LogFile *log) {
   fstream fs(log->filename(), fstream::out | fstream::binary);
   fs.write(utils::kMagicIdentifierStr, 4);
   fs.close();
+}
+
+bool isCommandLineOptionHelper(char *arg) {
+  int len = strlen(arg);
+  return (len >= 2 && arg[0] == '-' && arg[1] == '-') ||
+         (len >+ 1 && arg[0] == '-');
+}
+
+string cSubstr(const char *str, int pos, int len) {
+  string ret = "";
+  ret.resize(len);
+  for (int i = pos; i < pos + len; i++) {
+    ret[i - pos] = str[i];
+  }
+  return ret;
+}
+
+int getEqualsCharPosition(char *str) {
+  int pos = 0;
+  for (char *ch = str; *ch; ++ch, ++pos) {
+    if (*ch == '=')
+      return pos;
+  }
+  return -1;
+}
+
+static void argparse(vector<pair<string, string>> *args,
+                     int argc, char **argv) {
+  args->clear();
+  int i = 1;
+  while (i < argc) {
+    char *arg = argv[i];
+    int len = strlen(arg);
+    if (len) {
+      int startpos = 0;
+      if (len >= 2 && arg[0] == '-' && arg[1] == '-') {
+        startpos = 2;
+      } else if (len >= 1 && arg[0] == '-') {
+        startpos = 1;
+      }
+      string type, value;
+      int equalsSignPos = getEqualsCharPosition(arg);
+      if (startpos && equalsSignPos != -1) {
+        type = cSubstr(arg, startpos, equalsSignPos - startpos);
+        value = string(cSubstr(arg, equalsSignPos + 1, len - equalsSignPos));
+        i += 1;
+        args->emplace_back(make_pair(type, value));
+      } else if (startpos && i + 1 < argc &&
+                 !isCommandLineOptionHelper(argv[i + 1])) {
+        type = cSubstr(arg, startpos, len - startpos);
+        value = string(argv[i + 1]);
+        i += 2;
+        args->emplace_back(make_pair(type, value));
+      } else if (startpos) {
+        type = cSubstr(arg, startpos, len - startpos);
+        i += 1;
+        args->emplace_back(make_pair(type, value));
+      } else {
+        fprintf(stderr, "Invalid command line argument: %s\n", arg);
+        i += 1;
+      }
+    }
+  }
 }
 
 }  // namespace utils
