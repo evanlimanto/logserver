@@ -7,17 +7,17 @@
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/string.hpp>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include <string>
 #include <vector>
 
+using std::istream;
 using std::mutex;
+using std::ostream;
 using std::string;
 using std::vector;
 
-typedef long long int64;
+typedef long long int64;  // NOLINT
 
 const char kIndexFilePrefix[] = "logServerIndex";
 
@@ -25,72 +25,86 @@ class LogIndex;
 class LogFile;
 class LogEntry;
 
-class LogIndex {
- public:
-  LogIndex();
-  ~LogIndex();
-  void flush();
-  void read();
-  void addEntryToIndex(const string &data);
-  void addLogFileToIndex(const LogFile &logfile);
-
- private: 
-  vector<LogFile> logs_;
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int version) {
-    for (LogFile &log : logs_) {
-      ar & log;
-    }
-  }
-
-  friend class boost::serialization::access;
-};
-
 class LogEntry {
  public:
+  LogEntry() {}
   LogEntry(int _size, int _offset, int64 _timestamp, const string &_data);
   ~LogEntry() {}
+  string& data() {
+    return data_;
+  }
+  int& offset() {
+    return offset_;
+  }
+  int& size() {
+    return size_;
+  }
+  int64& timestamp() {
+    return timestamp_;
+  }
+  bool& hasData() {
+    return hasData_;
+  }
 
  private:
-  int size_;
-  int offset_;
-  int64 timestamp_;
+  int size_ = 0;
+  int offset_ = 0;
+  int64 timestamp_ = 0;
   string data_;
+  bool hasData_;
 
   friend class LogFile;
+  friend class LogIndex;
 };
 
 class LogFile {
  public:
   LogFile() {}
-  LogFile(const LogFile &other) : filename_(other.filename_), size_(other.size_),
-    entries_(other.entries_) {}
-  ~LogFile() {}
-  void addEntryToFile(const LogEntry &entry);
-  int size() {
+  LogFile(const LogFile &other) : filename_(other.filename_),
+    size_(other.size_), entries_(other.entries_) {}
+  ~LogFile();
+  void addEntryToFile(LogEntry *entry, bool isNewEntry);
+  string& filename() {
+    return filename_;
+  }
+  int& size() {
     return size_;
+  }
+  int& num_entries() {
+    return num_entries_;
   }
 
  private:
   string filename_;
-  int size_;  // log file size in bytes.
-  vector<LogEntry> entries_;
+  int size_ = 0;  // log file size in bytes.
+  int num_entries_ = 0;
+  vector<LogEntry*> entries_;
   mutex logfile_lock_;
-
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int version) {
-    ar & filename_;
-    ar & size_;
-    for (LogEntry &entry : entries_) {
-      ar & entry.offset_;
-      ar & entry.size_;
-      ar & entry.timestamp_;
-    }
-  }
-
-  friend class boost::serialization::access;
   friend class LogIndex;
 };
 
+/* Index File Format
+ * LogfileName LogfileSize LogfileNumEntries
+ * offset1 size1 timestamp1
+ * offset2 size2 timestamp2
+ * ...
+ * offsetN sizeN timestampN
+ */
+class LogIndex {
+ public:
+  explicit LogIndex(bool readEntryData = false);
+  ~LogIndex();
+  void flush();
+  void read(bool readEntryData = false);
+  void addEntryToIndex(const string &data);
+  void addLogFileToIndex(LogFile *logfile);
+  void dumpEntriesToStdout();
+  vector<LogFile*> &logs() {
+    return logs_;
+  }
+
+ private:
+  vector<LogFile*> logs_;
+};
 
 #endif  // LOG_MANAGER_H_
