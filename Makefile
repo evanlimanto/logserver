@@ -15,4 +15,4 @@ log_server.o : log_server.cc log_manager.h
 	$(CC) $(CFLAGS) log_server.cc
 
 clean:
-	\rm *.o logserver
+	\rm -f *.o logserver *.log logServerIndex

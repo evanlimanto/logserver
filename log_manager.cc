@@ -82,7 +82,7 @@ void LogIndex::flush() {
 void LogIndex::dumpEntriesToStdout() {
   for (LogFile *log : logs_) {
     for (LogEntry *entry : log->entries_) {
-      printf("log entry: %s\n", entry->data().c_str());
+      printf("%s", entry->data().c_str());
     }
   }
 }
@@ -144,7 +144,6 @@ int main(int argc, char **argv) {
   index.dumpEntriesToStdout();
 
   for (int i = 1; i < argc; i++) {
-    printf("argv[%d]: %s\n", i, argv[i]);
     index.addEntryToIndex(argv[i]);
   }
 
