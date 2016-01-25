@@ -4,7 +4,7 @@
 #
 
 make clean || exit 1
-make logserver || exit 1
+make || exit 1
 result=$(./logserver -write=a)
 result=$(./logserver -write=b)
 result=$(./logserver -write=c)

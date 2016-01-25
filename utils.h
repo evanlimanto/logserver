@@ -1,5 +1,8 @@
 /*
- * Copyright 2016 Evan Limanto
+ * utils.h
+ * Copyright (C) 2016 evanlimanto <evanlimanto@gmail.com>
+ *
+ * Distributed under terms of the MIT license.
  */
 
 #ifndef UTILS_H_
@@ -28,6 +31,9 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 using std::pair;
+using std::string;
+
+typedef long long int64;  // NOLINT
 
 namespace utils {
 
@@ -39,7 +45,7 @@ const char kMagicIdentifierStr[] =
   static_cast<char>(0x1c), static_cast<char>(0x4f)};
 const int kMaxLogFileSize = 67108864;
 const int kLogFileNameLength = 20;
-boost::random::mt19937 kGen;
+static boost::random::mt19937 kGen;
 
 static bool is_log_file(const string &filename) {
   // For now, log files are identified by the magic constant which is
@@ -118,23 +124,13 @@ static void generateRandomAlphaString(string *str, int length) {
   str->append(kLogExtension);
 }
 
-static void generateLogFile(LogFile *log) {
-  do {
-    utils::generateRandomAlphaString(&log->filename(),
-                                     utils::kLogFileNameLength);
-  } while (exists(log->filename()));
-  fstream fs(log->filename(), fstream::out | fstream::binary);
-  fs.write(utils::kMagicIdentifierStr, 4);
-  fs.close();
-}
-
-bool isCommandLineOptionHelper(char *arg) {
+static bool isCommandLineOptionHelper(char *arg) {
   int len = strlen(arg);
   return (len >= 2 && arg[0] == '-' && arg[1] == '-') ||
          (len >+ 1 && arg[0] == '-');
 }
 
-string cSubstr(const char *str, int pos, int len) {
+static string cSubstr(const char *str, int pos, int len) {
   string ret = "";
   ret.resize(len);
   for (int i = pos; i < pos + len; i++) {
@@ -143,7 +139,7 @@ string cSubstr(const char *str, int pos, int len) {
   return ret;
 }
 
-int getEqualsCharPosition(char *str) {
+static int getEqualsCharPosition(char *str) {
   int pos = 0;
   for (char *ch = str; *ch; ++ch, ++pos) {
     if (*ch == '=')

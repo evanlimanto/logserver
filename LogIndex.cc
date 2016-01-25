@@ -1,21 +1,19 @@
 /*
- * Copyright 2016 Evan Limanto
+ * LogIndex.cc
+ * Copyright (C) 2016 evanlimanto <evanlimanto@gmail.com>
+ *
+ * Distributed under terms of the MIT license.
  */
 
-#include "./log_manager.h"
+#include "./LogIndex.h"
 
 #include <boost/filesystem.hpp>
 #include <fstream>
-#include <memory>
+#include <vector>
 
-#include "./utils.h"
-
-using boost::archive::text_oarchive;
-using boost::archive::text_iarchive;
 using boost::filesystem::exists;
-using std::istream;
-using std::ofstream;
-using std::unique_ptr;
+using std::fstream;
+using std::vector;
 
 LogIndex::LogIndex(bool readEntryData) {
   if (exists(kIndexFilePrefix)) {
@@ -23,7 +21,7 @@ LogIndex::LogIndex(bool readEntryData) {
   }
 }
 
-LogIndex::~LogIndex() {
+LogIndex::~LogIndex() noexcept {
   flush();
   for (LogFile *log : logs_) {
     delete log;
@@ -107,50 +105,4 @@ void LogIndex::addEntryToIndex(const string &data) {
 
 void LogIndex::addLogFileToIndex(LogFile *logfile) {
   logs_.push_back(logfile);
-}
-
-void LogFile::addEntryToFile(LogEntry *entry, bool isNewEntry) {
-  logfile_lock_.lock();
-  if (filename().empty()) {
-    utils::generateLogFile(this);
-  }
-  entries_.push_back(entry);
-  if (isNewEntry) {
-    size_ += entry->size();
-    num_entries_ += 1;
-  }
-  logfile_lock_.unlock();
-}
-
-LogFile::~LogFile() {
-  for (LogEntry *entry : entries_) {
-    if (entry->hasData()) {
-      utils::writeDataToFile(entry->data(), filename(),
-                             entry->offset(), entry->size());
-    }
-    delete entry;
-  }
-  entries_.clear();
-}
-
-LogEntry::LogEntry(int _size, int _offset, int64 _timestamp,
-                   const string &_data) :
-  size_(_size), offset_(_offset), timestamp_(_timestamp),
-  data_(_data), hasData_(true) {}
-
-int main(int argc, char **argv) {
-  vector<pair<string, string>> args;
-  utils::argparse(&args, argc, argv);
-
-  utils::kGen.seed(time(0));
-  LogIndex index(true);
-  for (const auto &argpair : args) {
-    if (argpair.first == "write") {
-      index.addEntryToIndex(argpair.second);
-    } else if (argpair.first == "dump") {
-      index.dumpEntriesToStdout();
-    }
-  }
-
-  return 0;
 }
